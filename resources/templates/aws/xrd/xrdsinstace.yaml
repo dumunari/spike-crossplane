@@ -1,0 +1,37 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xrdsinstances.spikeidp.com
+spec:
+  group: spikeidp.com
+  names:
+    kind: xrdsinstance
+    plural: xrdsinstances
+
+  claimNames:
+    kind: simplepostgres
+    plural: simplepostgress
+
+  versions:
+  - name: v1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              storageGB:
+                type: number
+              instanceSize:
+                type: string
+              instanceName:
+                type: string
+            required:
+            - storageGB
+            - instanceSize
+            - instanceName
+        required:
+        - parameters

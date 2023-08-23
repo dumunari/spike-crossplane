@@ -1,0 +1,55 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xrdsinstance
+  labels:
+    crossplane.io/xrd: xrdsinstances.spikeidp.com
+spec:
+  compositeTypeRef:
+    apiVersion: spikeidp.com/v1
+    kind: xrdsinstance
+  writeConnectionSecretsToNamespace: crossplane-system
+  resources:
+  - name: rdsinstance
+    base:
+      apiVersion: rds.aws.upbound.io/v1beta1
+      kind: Instance
+      spec:
+        providerConfigRef:
+          name: default
+        forProvider:
+          passwordSecretRef:
+            key: password
+            name: pg-secret
+            namespace: crossplane-system
+          region: us-east-1
+          tags:
+            created-by: crossplane
+          autoMinorVersionUpgrade: true
+          engine: postgres
+          engineVersion: "13.7"
+          publiclyAccessible: false
+          skipFinalSnapshot: true
+          storageEncrypted: false
+          storageType: gp2
+          username: adminuser
+    patches:
+    - type: CombineFromComposite
+      combine:
+        variables:
+        - fromFieldPath: spec.instanceName
+        strategy: string
+        string:
+          fmt: "platform-%s-rds"
+      toFieldPath: metadata.annotations[crossplane.io/external-name]
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.storageGB
+      toFieldPath: spec.forProvider.allocatedStorage
+    - type: CombineFromComposite
+      combine:
+        variables:
+        - fromFieldPath: spec.instanceSize
+        strategy: string
+        string:
+          fmt: "db.t3.%s"
+      toFieldPath: spec.forProvider.instanceClass
